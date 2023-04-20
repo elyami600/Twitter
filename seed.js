@@ -36,25 +36,56 @@ db.query(`SELECT * FROM users`, (err, res) => {
   }
 
 });
+const getUsers = (request, response) => {
+  console.log(response);
+  db.query('SELECT * FROM users ORDER BY id ASC', (error, res) => {
+    if (error) {
+      throw error
+    }
+    console.log(res.rows);
+
+    response.status(200).json(results.rows)
+  })
+}
+const createNewUser = (request, response) => {
+  const { username, email, password} = request.body
+  console.log(request.body);
+
+  db.query(`INSERT INTO users (username, email, password) VALUES ('${username}','${email}','${password}')`, (error, results) => {
+    if (error) {
+      throw error
+    }
+    response.status(201).send(`User added with ID: ${results.id}`)
+    console.log(results.rowCount)
+    console.log(results.oid)
+    console.log(results.rows)
 
 
+  })
+}
 
-db.query(createUser)
-	.then(({ rows = [] }) => {
-		console.log('create ran successfully createUser', rows);
-		return rows;
-	})
-	.catch(err => {
-		console.error(err);
-		console.error(err.stack);
-	});
+const  login = (request, response) => {
+  const { email, password} = request.body
+  console.log(request.body);
 
-db.query(createTweet)
-	.then(({ rows = [] }) => {
-		console.log('create ran successfully createTweet', rows);
-		return rows;
-	})
-	.catch(err => {
-		console.error(err);
-		console.error(err.stack);
-	});
+  db.query(`SELECT * from users where email = '${email}' and password = '${password}'`, (error, results) => {
+    if (error) {
+      throw error
+    }
+    response.status(200).json(results)
+    response.status(201).send(`User added with ID: ${results.rows}`)
+    console.log(results.rowCount)
+    console.log(results.oid)
+    console.log(results.rows)
+
+
+  })
+}
+
+
+  module.exports = {
+    getUsers,
+    createNewUser,
+    login
+    
+  }
