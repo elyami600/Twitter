@@ -26,11 +26,28 @@ const db = new pg.Client({
   port: 5432,
 });
 
-db.connect();
+// //Connected Database
+db.connect((err) => { 
+  if (err) {
+  console.log(err);
+  } else {
+    console.log("Data logging initiated!");}
+  });
 
 db.query(`SELECT * FROM users`, (err, res) => {
   if(!err) {
-    console.log(res.rows);
+    console.log("SELECT * FROM users");
+    console.log(res.rows[0]);
+  } else {
+    console.log(err.message);
+  }
+
+});
+
+db.query(`SELECT * FROM tweettable `, (err, res) => {
+  if(!err) {
+    console.log("SELECT * FROM tweettable");
+    console.log(res.rows[0]);
   } else {
     console.log(err.message);
   }
@@ -47,6 +64,7 @@ const getUsers = (request, response) => {
     response.status(200).json(results.rows)
   })
 }
+
 const createNewUser = (request, response) => {
   const { username, email, password} = request.body
   console.log(request.body);
@@ -55,10 +73,7 @@ const createNewUser = (request, response) => {
     if (error) {
       throw error
     }
-    response.status(201).send(`User added with ID: ${results.id}`)
-    console.log(results.rowCount)
-    console.log(results.oid)
-    console.log(results.rows)
+    response.status(201).send(`User added with ID: ${response.rows[0]}`)
 
 
   })
@@ -68,24 +83,58 @@ const  login = (request, response) => {
   const { email, password} = request.body
   console.log(request.body);
 
+  
   db.query(`SELECT * from users where email = '${email}' and password = '${password}'`, (error, results) => {
     if (error) {
       throw error
     }
-    response.status(200).json(results)
-    response.status(201).send(`User added with ID: ${results.rows}`)
-    console.log(results.rowCount)
-    console.log(results.oid)
-    console.log(results.rows)
+    response.json({userId: results.id});
+    
+  })
+}
+const validation = (req, res) => {
+  const { body: { id }} = req
+  db.query(`SELECT * from users where id = '${id}' `)
+		.then((result) => {
 
+      if(!result.rows.length) {
+				return res.json({ message: 'this accout does not exist' });
+			}
+      res.json({userId: result.rows[0].id});
+      console.log({userId: result.rows[0].id })
 
+    })
+
+}
+/**
+ *  tweet
+ */
+const createNewTweet = (req, res) => {
+  const { body: { tweetText, userId } } = req;
+  db.query(`INSERT INTO tweettable (tweet, userId) VALUES ('${tweetText}', '${userId}') returning *`)
+  .then(({rows:tweet})=> {
+    db.query(`SELECT * from users where id = ${userId}`)
+    .then((result) => {
+
+      res.json({ tweet: {...tweet[0], username: result.rows[0].username}});
+    })
   })
 }
 
+const getAllTweets = (req, res) => {
+  db.query(`SELECT * from tweettable`)
+  .then((result) => {
+    res.json({ tweets: result.rows});
+  });
+  
+}
 
   module.exports = {
     getUsers,
     createNewUser,
-    login
+    login,
+    validation,
+    createNewTweet,
+    getAllTweets,
     
   }
